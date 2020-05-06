@@ -24,58 +24,49 @@ public class Application {
     private final List<List<String>> failedApplications = new ArrayList<>();
 
     public void execute(String command, String employerName, String jobName, String jobType, String jobSeekerName, String resumeApplicantName, LocalDate applicationTime) throws NotSupportedJobTypeException, RequiresResumeForJReqJobException, InvalidResumeException {
-        switch (command) {
-            case PUBLISH:
-                if (!jobType.equals(J_REQ) && !jobType.equals(ATS)) {
-                    throw new NotSupportedJobTypeException();
-                }
-
-                List<List<String>> alreadyPublished = jobs.getOrDefault(employerName, new ArrayList<>());
-
-                alreadyPublished.add(new ArrayList<String>() {{
-                    add(jobName);
-                    add(jobType);
-                }});
-                jobs.put(employerName, alreadyPublished);
-                break;
-            case SAVE: {
-                List<List<String>> saved = jobs.getOrDefault(employerName, new ArrayList<>());
-
-                saved.add(new ArrayList<String>() {{
-                    add(jobName);
-                    add(jobType);
-                }});
-                jobs.put(employerName, saved);
-                break;
+        if (PUBLISH.equals(command)) {
+            if (!jobType.equals(J_REQ) && !jobType.equals(ATS)) {
+                throw new NotSupportedJobTypeException();
             }
-            case APPLY: {
-                if (jobType.equals(J_REQ) && resumeApplicantName == null) {
-                    List<String> failedApplication = new ArrayList<String>() {{
-                        add(jobName);
-                        add(jobType);
-                        add(applicationTime.format(DateTimeFormatter.ofPattern(YYYY_MM_DD)));
-                        add(employerName);
-                    }};
-                    failedApplications.add(failedApplication);
-                    throw new RequiresResumeForJReqJobException();
-                }
 
-                if (jobType.equals(J_REQ) && !resumeApplicantName.equals(jobSeekerName)) {
-                    throw new InvalidResumeException();
-                }
-                List<List<String>> saved = this.applied.getOrDefault(jobSeekerName, new ArrayList<>());
+            List<List<String>> alreadyPublished = jobs.getOrDefault(employerName, new ArrayList<>());
 
-                saved.add(new ArrayList<String>() {{
+            alreadyPublished.add(new ArrayList<String>() {{
+                add(jobName);
+                add(jobType);
+            }});
+            jobs.put(employerName, alreadyPublished);
+        } else if (SAVE.equals(command)) {
+            List<List<String>> saved = jobs.getOrDefault(employerName, new ArrayList<>());
+            saved.add(new ArrayList<String>() {{
+                add(jobName);
+                add(jobType);
+            }});
+            jobs.put(employerName, saved);
+        } else if (APPLY.equals(command)) {
+            if (jobType.equals(J_REQ) && resumeApplicantName == null) {
+                List<String> failedApplication = new ArrayList<String>() {{
                     add(jobName);
                     add(jobType);
                     add(applicationTime.format(DateTimeFormatter.ofPattern(YYYY_MM_DD)));
                     add(employerName);
-                }});
-                applied.put(jobSeekerName, saved);
-                break;
+                }};
+                failedApplications.add(failedApplication);
+                throw new RequiresResumeForJReqJobException();
             }
-            default:
-                break;
+
+            if (jobType.equals(J_REQ) && !resumeApplicantName.equals(jobSeekerName)) {
+                throw new InvalidResumeException();
+            }
+            List<List<String>> saved = this.applied.getOrDefault(jobSeekerName, new ArrayList<>());
+
+            saved.add(new ArrayList<String>() {{
+                add(jobName);
+                add(jobType);
+                add(applicationTime.format(DateTimeFormatter.ofPattern(YYYY_MM_DD)));
+                add(employerName);
+            }});
+            applied.put(jobSeekerName, saved);
         }
     }
 
@@ -175,9 +166,7 @@ public class Application {
 
     private String genHtmlFormateJob(LocalDate date) {
         String result = "";
-        Iterator<Entry<String, List<List<String>>>> iterator = this.applied.entrySet().iterator();
-        while (iterator.hasNext()) {
-            Entry<String, List<List<String>>> set = iterator.next();
+        for (Entry<String, List<List<String>>> set : this.applied.entrySet()) {
             String applicant = set.getKey();
             List<List<String>> jobs1 = set.getValue();
             List<List<String>> appliedOnDate = jobs1.stream().filter(job -> job.get(2).equals(date.format(DateTimeFormatter.ofPattern(YYYY_MM_DD)))).collect(Collectors.toList());
@@ -209,9 +198,7 @@ public class Application {
 
     private String genCsvFormateJob(LocalDate date) {
         String result = "Employer,Job,Job Type,Applicants,Date" + "\n";
-        Iterator<Entry<String, List<List<String>>>> iterator = this.applied.entrySet().iterator();
-        while (iterator.hasNext()) {
-            Entry<String, List<List<String>>> set = iterator.next();
+        for (Entry<String, List<List<String>>> set : this.applied.entrySet()) {
             String applicant = set.getKey();
             List<List<String>> jobs1 = set.getValue();
             List<List<String>> appliedOnDate = jobs1.stream().filter(job -> job.get(2).equals(date.format(DateTimeFormatter.ofPattern(YYYY_MM_DD)))).collect(Collectors.toList());
@@ -225,9 +212,7 @@ public class Application {
 
     public int getSuccessfulApplications(String employerName, String jobName) {
         int result = 0;
-        Iterator<Entry<String, List<List<String>>>> iterator = this.applied.entrySet().iterator();
-        while (iterator.hasNext()) {
-            Entry<String, List<List<String>>> set = iterator.next();
+        for (Entry<String, List<List<String>>> set : this.applied.entrySet()) {
             List<List<String>> jobs = set.getValue();
 
             result += jobs.stream().anyMatch(job -> job.get(3).equals(employerName) && job.get(0).equals(jobName)) ? 1 : 0;
